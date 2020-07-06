@@ -148,6 +148,13 @@ class PDFDocument(_PDFDocument):
             40 * mm,
             **frame_kwargs,
         )
+        self.bill_frame = Frame(
+            0,
+            0,
+            21 * cm,
+            10 * cm,
+            **frame_kwargs,
+        )
         self.rest_frame = Frame(
             self.bounds.W,
             self.bounds.S,
@@ -170,7 +177,7 @@ class PDFDocument(_PDFDocument):
             [
                 PageTemplate(
                     id="First",
-                    frames=[self.address_frame, self.rest_frame],
+                    frames=[self.address_frame, self.bill_frame, self.rest_frame],
                     onPage=page_fn,
                 ),
                 PageTemplate(
@@ -365,6 +372,25 @@ class PDFDocument(_PDFDocument):
     def process_services_letter(self, instance, *, watermark, details, footer):
         self.watermark(watermark)
         self.postal_address(instance.postal_address)
+
+        if True:
+            import io
+            import tempfile
+            from qrbill.bill import QRBill
+            from svglib.svglib import svg2rlg
+            bill = QRBill(
+                amount="100.55",
+                **settings.WORKBENCH.QRBILL,
+            )
+
+            with tempfile.NamedTemporaryFile(mode="w") as f:
+                bill.as_svg(f)
+                f.seek(0)
+                drawing = svg2rlg(f.name)
+                self.story.append(drawing)
+            self.next_frame()
+
+
         self.h1(instance.title)
         self.spacer(2 * mm)
         self.table(details, self.style.tableColumnsLeft, self.style.table)
