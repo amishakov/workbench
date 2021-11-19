@@ -381,7 +381,8 @@ class PDFDocument(_PDFDocument):
 
             bill = QRBill(
                 amount="100.55",
-                extra_infos=instance.code,
+                extra_infos="{}: {}".format(capfirst(_("invoice")), instance.code),
+                language=settings.WORKBENCH.PDF_LANGUAGE,
                 **settings.WORKBENCH.QRBILL,
             )
 

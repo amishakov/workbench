@@ -34,7 +34,11 @@ def check(ctx):
 
 @fl.task
 def fmt(ctx):
-    fl.fmt(ctx)
+    fl._fmt_pyupgrade(ctx)
+    fl._fmt_black(ctx)
+    fl._fmt_isort(ctx)
+    # fl._fmt_djlint(ctx)
+    fl._fmt_prettier(ctx)
     fl.run(
         ctx,
         "yarn run prettier --write --no-semi --trailing-comma es5"
