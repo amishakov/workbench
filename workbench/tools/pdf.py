@@ -380,7 +380,7 @@ class PDFDocument(_PDFDocument):
             from svglib.svglib import svg2rlg
 
             bill = QRBill(
-                amount="100.55",
+                amount=str(instance.total),
                 extra_infos="{}: {}".format(capfirst(_("invoice")), instance.code),
                 language=settings.WORKBENCH.PDF_LANGUAGE,
                 **settings.WORKBENCH.QRBILL,
