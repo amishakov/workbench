@@ -374,14 +374,32 @@ class PDFDocument(_PDFDocument):
         self.postal_address(instance.postal_address)
 
         if True:
-            import io
             import tempfile
-            from qrbill.bill import QRBill
+
+            from qrbill.bill import MAX_CHARS_PAYMENT_LINE, CombinedAddress, QRBill
             from svglib.svglib import svg2rlg
+
             bill = QRBill(
                 amount="100.55",
                 **settings.WORKBENCH.QRBILL,
             )
+
+            class DebtorAddress(CombinedAddress):
+                def data_list(self):
+                    # 'K': combined address
+                    lines = [
+                        line for line in instance.postal_address.splitlines() if line
+                    ]
+                    for i in range(len(lines), 8):
+                        lines.append("")
+                    return ["K", *lines]
+
+                def as_paragraph(self, max_chars=MAX_CHARS_PAYMENT_LINE):
+                    return chain(
+                        *(self._split(line, max_chars) for line in self.data_list())
+                    )
+
+            bill.debtor = DebtorAddress()
 
             with tempfile.NamedTemporaryFile(mode="w") as f:
                 bill.as_svg(f)
@@ -389,7 +407,6 @@ class PDFDocument(_PDFDocument):
                 drawing = svg2rlg(f.name)
                 self.story.append(drawing)
             self.next_frame()
-
 
         self.h1(instance.title)
         self.spacer(2 * mm)
