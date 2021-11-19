@@ -45,6 +45,19 @@ def style(base, **kwargs):
     return style
 
 
+class Frame(Frame):
+    def __init__(self, *args, **kwargs):
+        kwargs = {
+            "showBoundary": False,
+            "leftPadding": 0,
+            "rightPadding": 0,
+            "topPadding": 0,
+            "bottomPadding": 0,
+            **kwargs,
+        }
+        super().__init__(*args, **kwargs)
+
+
 class PDFDocument(_PDFDocument):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("font_name", "Rep")
@@ -133,41 +146,23 @@ class PDFDocument(_PDFDocument):
             16 * mm,
         )
 
-        frame_kwargs = {
-            "showBoundary": self.show_boundaries,
-            "leftPadding": 0,
-            "rightPadding": 0,
-            "topPadding": 0,
-            "bottomPadding": 0,
-        }
-
         self.address_frame = Frame(
             self.bounds.W,
             20.2 * cm,
             self.bounds.E - self.bounds.W,
             40 * mm,
-            **frame_kwargs,
-        )
-        self.bill_frame = Frame(
-            0,
-            0,
-            21 * cm,
-            10 * cm,
-            **frame_kwargs,
         )
         self.rest_frame = Frame(
             self.bounds.W,
             self.bounds.S,
             self.bounds.E - self.bounds.W,
             18.2 * cm,
-            **frame_kwargs,
         )
         self.full_frame = Frame(
             self.bounds.W,
             self.bounds.S,
             self.bounds.E - self.bounds.W,
             self.bounds.N - self.bounds.S,
-            **frame_kwargs,
         )
 
     def init_letter(self, *, page_fn=None, page_fn_later=None):
@@ -177,7 +172,41 @@ class PDFDocument(_PDFDocument):
             [
                 PageTemplate(
                     id="First",
-                    frames=[self.address_frame, self.bill_frame, self.rest_frame],
+                    frames=[self.address_frame, self.rest_frame],
+                    onPage=page_fn,
+                ),
+                PageTemplate(
+                    id="Later",
+                    frames=[self.full_frame],
+                    onPage=page_fn_later or page_fn,
+                ),
+            ]
+        )
+        self.story.append(NextPageTemplate("Later"))
+
+    def init_invoice_letter(self, *, page_fn=None, page_fn_later=None):
+        page_fn = page_fn or self.stationery()
+        self.generate_style()
+        self.doc.addPageTemplates(
+            [
+                PageTemplate(
+                    id="First",
+                    frames=[
+                        self.address_frame,
+                        Frame(
+                            0,
+                            0,
+                            21 * cm,
+                            105 * mm,
+                        ),
+                        Frame(
+                            self.bounds.W,
+                            11 * cm,
+                            self.bounds.E - self.bounds.W,
+                            9 * cm,
+                        ),
+                        self.rest_frame,
+                    ],
                     onPage=page_fn,
                 ),
                 PageTemplate(
@@ -373,7 +402,9 @@ class PDFDocument(_PDFDocument):
         self.watermark(watermark)
         self.postal_address(instance.postal_address)
 
-        if True:
+        is_qrbill = isinstance(instance, Invoice) and settings.WORKBENCH.QRBILL
+
+        if is_qrbill:
             import tempfile
 
             from qrbill.bill import MAX_CHARS_PAYMENT_LINE, CombinedAddress, QRBill
@@ -410,9 +441,20 @@ class PDFDocument(_PDFDocument):
                 self.story.append(drawing)
             self.next_frame()
 
-        self.h1(instance.title)
-        self.spacer(2 * mm)
-        self.table(details, self.style.tableColumnsLeft, self.style.table)
+            self.h1(instance.title)
+            self.spacer(2 * mm)
+            self.table(details, self.style.tableColumnsLeft, self.style.table)
+            self.spacer(2 * mm)
+            self.p(footer)
+            self.next_frame()
+
+            self.h2(_("Invoice details"))
+
+        else:
+            self.h1(instance.title)
+            self.spacer(2 * mm)
+            self.table(details, self.style.tableColumnsLeft, self.style.table)
+
         if instance.description:
             self.spacer(5 * mm)
             self.p(instance.description)
@@ -426,7 +468,8 @@ class PDFDocument(_PDFDocument):
         )
         self.table_total(instance)
         self.spacer(2 * mm)
-        self.p(footer)
+        if not is_qrbill:
+            self.p(footer)
 
     def process_offer(self, offer):
         self.process_services_letter(
@@ -608,7 +651,7 @@ als gegenstandslos zu betrachten.</p>
         )
         self.restart()
         for invoice in invoices:
-            self.init_letter(page_fn=self.stationery())
+            self.init_invoice_letter(page_fn=self.stationery())
             self.process_invoice(invoice)
             self.restart()
 
