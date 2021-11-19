@@ -381,6 +381,7 @@ class PDFDocument(_PDFDocument):
 
             bill = QRBill(
                 amount="100.55",
+                extra_infos=instance.code,
                 **settings.WORKBENCH.QRBILL,
             )
 
