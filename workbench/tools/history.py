@@ -81,11 +81,21 @@ class Prettifier:
 
         return default_if_none(value, _("<no value>"))
 
+    def handle_datetime(self, values, field):
+        value = values.get(field.attname)
+        if value is None:
+            return _("<no value>")
+        dt = dateparse.parse_datetime(value)
+        if dt:
+            values[field.attname] = dt
+            return local_date_format(dt)
+        return value
+
     def handle_date(self, values, field):
         value = values.get(field.attname)
         if value is None:
             return _("<no value>")
-        dt = dateparse.parse_datetime(value) or dateparse.parse_date(value)
+        dt = dateparse.parse_date(value)
         if dt:
             values[field.attname] = dt
             return local_date_format(dt)
@@ -141,6 +151,9 @@ class Prettifier:
 
         if isinstance(field, (models.BooleanField, models.NullBooleanField)):
             return self.handle_bool(values, field)
+
+        if isinstance(field, models.DateTimeField):
+            return self.handle_datetime(values, field)
 
         if isinstance(field, models.DateField):
             return self.handle_date(values, field)
