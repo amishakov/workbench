@@ -51,7 +51,10 @@ class InvoiceQuerySet(SearchQuerySet):
         return self.filter(
             Q(status=Invoice.IN_PREPARATION)
             | Q(status=Invoice.SENT, due_on__isnull=False, due_on__lte=in_days(-15)),
-            Q(owned_by=user) | Q(owned_by__is_active=False),
+            Q(owned_by=user)
+            | Q(owned_by__is_active=False, project__isnull=True)
+            | Q(owned_by__is_active=False, project__owned_by__is_active=False)
+            | Q(owned_by__is_active=False, project__owned_by=user),
         ).select_related("project", "owned_by")
 
 
