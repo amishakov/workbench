@@ -149,14 +149,14 @@ venv = "."
 venvPath = ".venv"
 
 [tool.coverage]
-run.branch = true
 run.omit = [
   "*migrate*",
   "*migrations*",
   "*venv*",
 ]
-report.show_missing = true
+run.branch = true
 report.skip_covered = true
+report.show_missing = true
 
 [tool.djangofmt]
 indent-width = 2

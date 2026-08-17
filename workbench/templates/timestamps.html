@@ -65,9 +65,7 @@
                 {% endif %}
               "
               title="{% translate 'Previous day' %}"
-              {% if not previous %}
-                aria-disabled="true"
-              {% endif %}
+              {% if not previous %}aria-disabled="true"{% endif %}
             >
               &laquo;
             </a>
@@ -80,9 +78,7 @@
                 {% endif %}
               "
               title="{% translate 'Next day' %}"
-              {% if not next %}
-                aria-disabled="true"
-              {% endif %}
+              {% if not next %}aria-disabled="true"{% endif %}
             >
               &raquo;
             </a>

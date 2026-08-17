@@ -68,9 +68,7 @@
             </th>
             <th class="text-end">
               <a
-                {% if not row.logged_hours %}
-                  class="text-black-30"
-                {% endif %}
+                {% if not row.logged_hours %}class="text-black-30"{% endif %}
                 href="{% url 'logbook_loggedhours_list' %}?service={{ row.service.pk }}"
               >{{ row.logged_hours|hours }}</a>
             </th>
