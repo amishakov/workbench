@@ -58,6 +58,9 @@ export async function saveBreak(dispatch, activity, { reload = true } = {}) {
     })
     if (reload) window.location.reload()
   } else {
+    // The form came back with errors or warnings. Remember the activity so
+    // that submitting the modal successfully still resets it.
+    dispatch({ type: "MODAL_ACTIVITY", id: activity.id })
     window.initModal(await response.text())
   }
 }
@@ -171,6 +174,11 @@ export async function sendLogbook(dispatch, { activity, current }) {
     headers,
   })
   if (response.status === 200) {
+    // The form came back with errors or warnings. Stop the timer and remember
+    // the activity so that submitting the modal successfully still resets it.
+    if (current && current.id === activity.id)
+      dispatch({ type: "STOP", current })
+    dispatch({ type: "MODAL_ACTIVITY", id: activity.id })
     window.initModal(await response.text())
   } else if (response.status === 201) {
     if (current && current.id === activity.id)
