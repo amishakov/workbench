@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import Draggable from "react-draggable"
 import { connect } from "react-redux"
 
-import { overwriteBreakElapsed, saveBreak } from "./actions.js"
+import { openBreakForm, overwriteBreakElapsed, saveBreak } from "./actions.js"
 import { ActivitySettings } from "./activitySettings.js"
 import { gettext } from "./i18n.js"
 import * as icons from "./icons.js"
@@ -124,6 +124,14 @@ export const BreakActivity = connect((state) => ({ current: state.current }))(
                     {icons.play}
                   </button>
                 )}
+                <button
+                  className="btn btn-sm ms-2 btn-light"
+                  type="button"
+                  onClick={() => openBreakForm(dispatch, activity)}
+                  title={gettext("Open break form")}
+                >
+                  {icons.pen}
+                </button>
                 <button
                   className="btn btn-sm ms-2 btn-success"
                   type="button"

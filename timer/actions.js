@@ -62,6 +62,21 @@ export async function saveBreak(dispatch, activity, { reload = true } = {}) {
   }
 }
 
+export function openBreakForm(dispatch, activity) {
+  dispatch({ type: "MODAL_ACTIVITY", id: activity.id })
+
+  const params = new URLSearchParams()
+  if (activity.startedAt) {
+    const endedAt = new Date()
+    params.append("day", formatDate(endedAt))
+    params.append("starts_at", formatTime(new Date(activity.startedAt * 1000)))
+    params.append("ends_at", formatTime(endedAt))
+  }
+  params.append("description", activity.description)
+
+  window.openModalFromUrl(`${BREAK_URL}?${params.toString()}`)
+}
+
 export function createActivity(dispatch, fields = {}) {
   dispatch({
     type: "ADD_ACTIVITY",

@@ -27,12 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function addModalActivityListener(store) {
   window.jQuery(document).on("modalform", () => {
-    const { modalActivity } = store.getState()
+    const { activities, modalActivity } = store.getState()
     if (modalActivity) {
       store.dispatch({
         type: "UPDATE_ACTIVITY",
         id: modalActivity,
-        fields: { description: "", seconds: 0 },
+        fields:
+          activities[modalActivity]?.type === "break"
+            ? { description: "", startedAt: null }
+            : { description: "", seconds: 0 },
       })
     }
   })

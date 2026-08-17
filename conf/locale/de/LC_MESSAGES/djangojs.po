@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-26 08:42+0100\n"
+"POT-Creation-Date: 2026-08-17 11:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -132,6 +132,10 @@ msgstr "Davon provisorisch"
 #: conf/strings.js timer/activitySettings.js
 msgid "OK"
 msgstr "OK"
+
+#: conf/strings.js timer/breakActivity.js
+msgid "Open break form"
+msgstr "Öffne das Pausenformular"
 
 #: conf/strings.js timer/activity.js
 msgid "Open logged hours form"
