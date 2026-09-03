@@ -23,6 +23,9 @@ from workbench.tools.formats import Z1, Z2
 
 class Months(UserDict):
     def __init__(self, *, year, users):
+        # UserDict keeps its entries in self.data, which only exists once
+        # UserDict.__init__ has run.
+        super().__init__()
         self.year = year
         self.year_by_wtm = {
             year.working_time_model_id: year for year in Year.objects.filter(year=year)
