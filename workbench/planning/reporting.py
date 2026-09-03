@@ -181,7 +181,7 @@ class Planning:
                 "id": milestone.id,
                 "title": milestone.title,
                 "dow": local_date_format(milestone.date, fmt="l, j.n."),
-                "date": local_date_format(milestone.date, fmt="j."),
+                "date": local_date_format(milestone.date, fmt="j.n."),
                 "range": "{} – {}".format(
                     local_date_format(start, fmt="d.m."),
                     local_date_format(milestone.date, fmt="d.m."),

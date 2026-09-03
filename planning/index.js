@@ -577,7 +577,9 @@ const Milestones = ({ project }) => {
                   href={m.url}
                   data-ajaxmodal
                   title={`${m.title} (${m.dow})`}
-                />
+                >
+                  <span className="planning--milestone-date">{m.date}</span>
+                </Cell>
               ))}
           </Fragment>
         )
