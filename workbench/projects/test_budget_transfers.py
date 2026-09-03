@@ -229,6 +229,17 @@ class BudgetTransferTest(TestCase):
             self.assertContains(response, '<div class="modal">')
             self.assertNotContains(response, "<!DOCTYPE html>")
 
+        # Deleting happens from inside the edit modal, and the row itself is
+        # what opens that modal.
+        response = self.client.get(transfer.urls["update"])
+        self.assertContains(response, transfer.urls["delete"])
+        response = self.client.get(source.urls["createbudgettransfer"])
+        self.assertNotContains(response, "budget-transfer/")
+
+        response = self.client.get(source.get_absolute_url())
+        self.assertContains(response, transfer.urls["update"])
+        self.assertContains(response, "stretched-link")
+
         response = self.client.post(
             transfer.urls["delete"],
             headers={"x-requested-with": "XMLHttpRequest"},

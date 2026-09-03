@@ -1,0 +1,13 @@
+{% extends "modalform.html" %}
+{% load i18n %}
+
+{% block footer %}
+  {% if form.instance.pk %}
+    <a
+      href="{{ form.instance.urls.delete }}"
+      class="btn btn-outline-danger me-auto"
+      data-ajaxmodal
+    >{% translate 'Delete' %}</a>
+  {% endif %}
+  <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+{% endblock footer %}

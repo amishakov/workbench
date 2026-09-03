@@ -328,7 +328,6 @@ urlpatterns = [
             model=BudgetTransfer,
             form_class=BudgetTransferForm,
             related_model=Project,
-            template_name="modalform.html",
         ),
         name="projects_project_createbudgettransfer",
     ),
@@ -339,11 +338,7 @@ urlpatterns = [
     ),
     path(
         "budget-transfer/<int:pk>/update/",
-        generic.UpdateView.as_view(
-            model=BudgetTransfer,
-            form_class=BudgetTransferForm,
-            template_name="modalform.html",
-        ),
+        generic.UpdateView.as_view(model=BudgetTransfer, form_class=BudgetTransferForm),
         name="projects_budgettransfer_update",
     ),
     path(
