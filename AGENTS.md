@@ -28,3 +28,11 @@ Edit `conf/locale/de/LC_MESSAGES/django.po` manually. Remove the `#, fuzzy` flag
 - Template arithmetic is not supported in Django `{% if %}` tags — precompute derived values (thresholds, flags) in the view instead.
 - Use `speckenv` to load `.env` files in standalone Python scripts: `from speckenv import read_speckenv; read_speckenv(Path(__file__).parent / ".env")`
 - The "add issue to project" GitHub Actions workflow is duplicated across individual repos and should be consolidated into the org-level `.github` repo (org-level workflows apply to all repos). The cross-app parent warning workflow goes there too. See `specs/github-cost-allocation-report.md`.
+
+# Committing
+
+- Commit feature by feature: one self-contained change per commit, not a single
+  batch commit at the end of a session.
+- No attribution trailers in commit messages (no `Co-Authored-By:`, no
+  "Generated with ..." footers).
+- Commit messages are written in English.
