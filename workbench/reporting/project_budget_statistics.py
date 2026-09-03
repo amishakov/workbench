@@ -8,7 +8,7 @@ from django.utils import timezone
 from workbench.invoices.models import Invoice, ProjectedInvoice
 from workbench.logbook.models import LoggedCost, LoggedHours
 from workbench.offers.models import Offer
-from workbench.projects.models import Service
+from workbench.projects.models import BudgetTransfer, Service
 from workbench.tools.formats import Z1, Z2
 
 
@@ -114,6 +114,10 @@ def project_budget_statistics(projects, *, cutoff_date=None):
             ]
         projected_gross_margin[row["project"]] += row["gross_margin__sum"]
 
+    # Budget which was invoiced on one project but is worked off on another
+    # (or reserved for that) belongs to the project which does the work.
+    budget_adjustments = BudgetTransfer.objects.adjustments(projects=projects)
+
     statistics = [
         {
             "project": project,
@@ -125,7 +129,8 @@ def project_budget_statistics(projects, *, cutoff_date=None):
                 project.id
             ],
             "third_party_costs": third_party_costs_per_project.get(project.id, Z2),
-            "sold": sold_per_project.get(project.id, Z2),
+            "sold": sold_per_project.get(project.id, Z2)
+            + budget_adjustments[project.id],
             "discount": discount_per_project.get(project.id, Z2),
             "invoiced": invoiced_per_project.get(project.id, Z2),
             "hours": hours_per_project[project.id],

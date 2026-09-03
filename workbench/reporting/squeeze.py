@@ -23,7 +23,13 @@ from workbench.invoices.models import Invoice, ProjectedInvoice
 from workbench.invoices.utils import recurring
 from workbench.logbook.models import LoggedCost, LoggedHours
 from workbench.offers.models import Offer
-from workbench.projects.models import InternalType, InternalTypeUser, Project, Service
+from workbench.projects.models import (
+    BudgetTransfer,
+    InternalType,
+    InternalTypeUser,
+    Project,
+    Service,
+)
 from workbench.projects.reporting import hours_per_type
 from workbench.tools.formats import Z0, Z1, Z2, local_date_format
 from workbench.tools.xlsx import WorkbenchXLSXDocument
@@ -100,6 +106,15 @@ def project_gross_margin(project):
     )
     gross_margin = max(offered_for_margin, projected, invoiced)
     hours = max(hours_offered, hours_logged)
+
+    # Budget which was invoiced here but is worked off elsewhere (or reserved
+    # for that) has to follow the hours it paid for.
+    gross_margin = max(
+        gross_margin
+        + BudgetTransfer.objects.adjustments(projects=[project])[project.id],
+        Z2,
+    )
+
     return {
         "gross_margin": gross_margin,
         "hours": hours,
@@ -242,6 +257,8 @@ def squeeze_data(date_range):  # noqa: C901
     for project_id, project in Project.objects.in_bulk(projects.keys()).items():
         projects[project_id]["project"] = project
 
+    budget_adjustments = BudgetTransfer.objects.adjustments(projects=projects.keys())
+
     # Compute per-project margin, hours, rate, and per-user attribution
     project_list = []
     for p in projects.values():
@@ -254,6 +271,11 @@ def squeeze_data(date_range):  # noqa: C901
         hours_offered = p["hours_offered"]
         hours_logged = p["hours_logged"]
         hours = max((hours_offered, hours_logged))
+
+        # Budget which was invoiced here but is worked off elsewhere (or
+        # reserved for that) has to follow the hours it paid for, otherwise the
+        # source project pays too high a rate and the target project none.
+        margin = max(margin + budget_adjustments[p["project"].id], Z2)
 
         # Total weighted hours in the period across all users for this project.
         # Used to distribute the period slice between users by rate-weighted hours.

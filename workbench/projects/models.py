@@ -16,7 +16,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from workbench.accounts.models import User
 from workbench.contacts.models import Organization, Person
 from workbench.services.models import ServiceBase
-from workbench.tools.formats import Z1, Z2, local_date_format
+from workbench.tools.formats import Z1, Z2, currency, local_date_format
 from workbench.tools.models import Model, MoneyField, SearchQuerySet
 from workbench.tools.urls import model_urls
 from workbench.tools.validation import in_days, raise_if_errors
@@ -895,3 +895,112 @@ class Service(ServiceBase):
             and not self.is_work_completed
             and not self.is_budget_retainer
         )
+
+
+class BudgetTransferQuerySet(models.QuerySet):
+    def reserved(self):
+        return self.filter(to_project__isnull=True)
+
+    def adjustments(self, *, projects=None):
+        """
+        Net budget adjustment per project as ``{project_id: amount}``.
+
+        Only money moves. The hours are already in the right place: they were
+        logged on whichever project the work actually happened on.
+
+        Budget leaves the project it was reserved on immediately -- whether or
+        not a target project exists yet -- and arrives on the target project as
+        soon as one is named.
+        """
+        adjustments = defaultdict(lambda: Z2)
+        queryset = self
+        if projects is not None:
+            queryset = queryset.filter(
+                Q(from_project__in=projects) | Q(to_project__in=projects)
+            )
+        for from_project, to_project, amount in queryset.values_list(
+            "from_project", "to_project", "amount"
+        ):
+            adjustments[from_project] -= amount
+            if to_project:
+                adjustments[to_project] += amount
+        return adjustments
+
+
+@model_urls
+class BudgetTransfer(Model):
+    """
+    Budget which has been invoiced on one project but is worked off on another,
+    for example a share of a campaign website's budget reserved for a later
+    re-conception.
+
+    Closed projects cannot be reopened, so without this the hours end up on a
+    project which never saw any revenue: the people on the original project get
+    credited with an implausibly high hourly rate, the people on the later one
+    with none at all. Moving the budget puts the money next to the hours it
+    actually paid for.
+
+    ``to_project`` may be empty. The budget then counts as reserved: it has
+    already left the source project -- which is what keeps that project's rate
+    honest -- but has not arrived anywhere yet. Splitting a reserved amount
+    across several projects means narrowing this transfer and adding another.
+    """
+
+    open_in_modal = True
+
+    from_project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        verbose_name=_("from project"),
+        related_name="budget_transfers_out",
+    )
+    to_project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        verbose_name=_("to project"),
+        related_name="budget_transfers_in",
+        help_text=_(
+            "Leave this empty to only reserve the budget for now. It stops"
+            " counting towards the source project either way."
+        ),
+    )
+    title = models.CharField(_("title"), max_length=200)
+    amount = MoneyField(_("amount"))
+    notes = models.TextField(_("notes"), blank=True)
+    created_at = models.DateTimeField(_("created at"), default=timezone.now)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        verbose_name=_("created by"),
+        related_name="+",
+    )
+
+    objects = BudgetTransferQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("budget transfer")
+        verbose_name_plural = _("budget transfers")
+
+    def __str__(self):
+        return f"{self.title} ({currency(self.amount)})"
+
+    def get_absolute_url(self):
+        return self.from_project.get_absolute_url()
+
+    @property
+    def is_reserved(self):
+        return self.to_project_id is None
+
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        errors = {}
+
+        if self.to_project_id and self.to_project_id == self.from_project_id:
+            errors["to_project"] = _(
+                "Moving budget to the same project does not do anything."
+            )
+
+        raise_if_errors(errors, exclude)

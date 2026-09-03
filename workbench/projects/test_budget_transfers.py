@@ -1,0 +1,174 @@
+import datetime as dt
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.utils.translation import deactivate_all
+
+from workbench import factories
+from workbench.invoices.models import Invoice
+from workbench.projects.models import BudgetTransfer
+from workbench.reporting.project_budget_statistics import project_budget_statistics
+from workbench.reporting.squeeze import project_gross_margin, squeeze_data
+from workbench.tools.validation import in_days
+
+
+class BudgetTransferTest(TestCase):
+    """
+    The scenario: a campaign website project is invoiced and closed, and part of
+    its budget was reserved for a later re-conception which happens on a new
+    project. Closed projects cannot be reopened, so the hours land on a project
+    without revenue.
+    """
+
+    def setUp(self):
+        deactivate_all()
+
+    def campaign_project(self, *, user, invoiced, hours):
+        """A closed project with an invoice and some logged hours."""
+        project = factories.ProjectFactory.create(owned_by=user)
+        service = factories.ServiceFactory.create(
+            project=project, effort_rate=100, effort_type="Any"
+        )
+        factories.LoggedHoursFactory.create(
+            service=service, rendered_by=user, created_by=user, hours=hours
+        )
+        factories.InvoiceFactory.create(
+            project=project,
+            customer=project.customer,
+            contact=project.contact,
+            owned_by=user,
+            type=Invoice.FIXED,
+            subtotal=invoiced,
+            status=Invoice.PAID,
+            invoiced_on=in_days(-30),
+            due_on=in_days(-15),
+            closed_on=in_days(-10),
+        )
+        project.closed_on = dt.date.today()
+        project.save()
+        return project
+
+    def reconception_project(self, *, user, hours):
+        """An open project with hours but no revenue of its own."""
+        project = factories.ProjectFactory.create(owned_by=user)
+        service = factories.ServiceFactory.create(
+            project=project, effort_rate=100, effort_type="Any"
+        )
+        factories.LoggedHoursFactory.create(
+            service=service, rendered_by=user, created_by=user, hours=hours
+        )
+        return project
+
+    def test_rates_without_a_transfer(self):
+        """Without a transfer the source looks great and the target worthless"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        target = self.reconception_project(user=user, hours=40)
+
+        self.assertEqual(project_gross_margin(source)["rate"], Decimal(300))
+        self.assertEqual(project_gross_margin(target)["rate"], Decimal(0))
+
+    def test_transfer_moves_the_rate_along(self):
+        """Moving budget puts the money next to the hours it paid for"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        target = self.reconception_project(user=user, hours=40)
+
+        BudgetTransfer.objects.create(
+            from_project=source,
+            to_project=target,
+            title="Re-Konzeption",
+            amount=Decimal(8000),
+            created_by=user,
+        )
+
+        self.assertEqual(project_gross_margin(source)["rate"], Decimal(100))
+        self.assertEqual(project_gross_margin(target)["rate"], Decimal(200))
+
+    def test_reserving_without_a_target_already_helps(self):
+        """Budget leaves the source even before a target project exists"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+
+        transfer = BudgetTransfer.objects.create(
+            from_project=source,
+            title="Reserved for the re-conception",
+            amount=Decimal(8000),
+            created_by=user,
+        )
+        self.assertTrue(transfer.is_reserved)
+        self.assertIn(transfer, BudgetTransfer.objects.reserved())
+
+        # 12'000 - 8'000 reserved over its own 40 hours.
+        self.assertEqual(project_gross_margin(source)["rate"], Decimal(100))
+
+    def test_squeeze_report_agrees(self):
+        """The squeeze report attributes the moved margin to the later project"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        target = self.reconception_project(user=user, hours=40)
+        BudgetTransfer.objects.create(
+            from_project=source,
+            to_project=target,
+            title="Re-Konzeption",
+            amount=Decimal(8000),
+            created_by=user,
+        )
+
+        data = squeeze_data([in_days(-7), in_days(7)])
+        by_project = {row["project"]: row for row in data["projects"]}
+        self.assertEqual(by_project[source]["gross_margin"], Decimal(4000))
+        self.assertEqual(by_project[target]["gross_margin"], Decimal(8000))
+        self.assertEqual(by_project[source]["rate"], Decimal(100))
+        self.assertEqual(by_project[target]["rate"], Decimal(200))
+
+    def test_project_budget_statistics_follows(self):
+        """The moved budget changes the cost cap on both projects"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        target = self.reconception_project(user=user, hours=40)
+        offer = factories.OfferFactory.create(
+            project=source, status=factories.Offer.ACCEPTED
+        )
+        factories.ServiceFactory.create(
+            project=source, offer=offer, cost=Decimal(12000)
+        )
+        offer.save()
+
+        before = {
+            s["project"]: s["sold"]
+            for s in project_budget_statistics([source, target])["statistics"]
+        }
+        self.assertEqual(before[source], Decimal(12000))
+        self.assertEqual(before[target], Decimal(0))
+
+        BudgetTransfer.objects.create(
+            from_project=source,
+            to_project=target,
+            title="Re-Konzeption",
+            amount=Decimal(8000),
+            created_by=user,
+        )
+
+        after = {
+            s["project"]: s["sold"]
+            for s in project_budget_statistics([source, target])["statistics"]
+        }
+        self.assertEqual(after[source], Decimal(4000))
+        self.assertEqual(after[target], Decimal(8000))
+
+    def test_cannot_move_budget_to_the_same_project(self):
+        """Moving budget onto its own project is rejected"""
+        user = factories.UserFactory.create()
+        project = factories.ProjectFactory.create(owned_by=user)
+        transfer = BudgetTransfer(
+            from_project=project,
+            to_project=project,
+            title="Nonsense",
+            amount=Decimal(100),
+            created_by=user,
+        )
+        with self.assertRaises(ValidationError) as cm:
+            transfer.clean_fields()
+        self.assertIn("to_project", cm.exception.error_dict)
