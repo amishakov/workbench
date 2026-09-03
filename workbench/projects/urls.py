@@ -22,6 +22,7 @@ from workbench.planning.views import (
     project_planning_gantt_xlsx,
 )
 from workbench.projects.forms import (
+    BudgetTransferForm,
     CampaignDeleteForm,
     CampaignForm,
     CampaignSearchForm,
@@ -32,7 +33,7 @@ from workbench.projects.forms import (
     ServiceForm,
     ServiceMoveForm,
 )
-from workbench.projects.models import Campaign, Project, Service
+from workbench.projects.models import BudgetTransfer, Campaign, Project, Service
 from workbench.projects.views import (
     OffersRenumberView,
     ProjectDetailView,
@@ -320,6 +321,33 @@ urlpatterns = [
         name="projects_service_assign_service_type",
     ),
     path("service/set-order/", set_order, name="projects_service_set_order"),
+    # Budget transfers
+    path(
+        "<int:pk>/createbudgettransfer/",
+        generic.CreateRelatedView.as_view(
+            model=BudgetTransfer,
+            form_class=BudgetTransferForm,
+            related_model=Project,
+        ),
+        name="projects_project_createbudgettransfer",
+    ),
+    path(
+        "budget-transfer/<int:pk>/",
+        lambda request, pk: redirect(get_object_or_404(BudgetTransfer, pk=pk)),
+        name="projects_budgettransfer_detail",
+    ),
+    path(
+        "budget-transfer/<int:pk>/update/",
+        generic.UpdateView.as_view(model=BudgetTransfer, form_class=BudgetTransferForm),
+        name="projects_budgettransfer_update",
+    ),
+    path(
+        "budget-transfer/<int:pk>/delete/",
+        generic.DeleteView.as_view(
+            model=BudgetTransfer, template_name="modal_confirm_delete.html"
+        ),
+        name="projects_budgettransfer_delete",
+    ),
     path(
         "<int:pk>/services/",
         services,

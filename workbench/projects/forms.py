@@ -10,8 +10,9 @@ from workbench.accounts.features import FEATURES
 from workbench.accounts.models import User
 from workbench.contacts.models import Organization, Person
 from workbench.invoices.models import ProjectedInvoice
-from workbench.projects.models import Campaign, Project, Service
+from workbench.projects.models import BudgetTransfer, Campaign, Project, Service
 from workbench.reporting.models import FreezeDate
+from workbench.reporting.squeeze import project_gross_margin
 from workbench.services.models import ServiceType
 from workbench.tools.formats import Z2, currency, local_date_format
 from workbench.tools.forms import (
@@ -734,4 +735,58 @@ class ProjectedInvoicesProjectForm(ModelForm):
         instance = super().save()
         for formset in self.formsets.values():
             formset.save()
+        return instance
+
+
+@add_prefix("modal")
+class BudgetTransferForm(ModelForm):
+    class Meta:
+        model = BudgetTransfer
+        fields = ("to_project", "title", "amount", "notes")
+        widgets = {
+            "to_project": Autocomplete(model=Project, params={"only_open": "on"}),
+            "notes": Textarea,
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.project = kwargs.pop("project", None)
+        if not self.project:  # Updating
+            self.project = kwargs["instance"].from_project
+        super().__init__(*args, **kwargs)
+        self.instance.from_project = self.project
+
+        self.fields["amount"].help_text = format_html(
+            "{} {}",
+            _("Part of the total invoiced on %(project)s.") % {"project": self.project},
+            _("Available: %(available)s.")
+            % {"available": currency(self.available_amount())},
+        )
+
+    def available_amount(self):
+        """What is left of this project's budget for this transfer."""
+        # project_gross_margin() already accounts for every transfer on this
+        # project, this one included, so add back what it currently takes away.
+        margin = project_gross_margin(self.project)["gross_margin"]
+        return margin + (self.instance.amount if self.instance.pk else Z2)
+
+    def clean(self):
+        data = super().clean()
+
+        if (amount := data.get("amount")) and amount > self.available_amount():
+            self.add_warning(
+                _(
+                    "Moving %(amount)s away leaves %(project)s with a negative"
+                    " budget. Are you sure?"
+                )
+                % {"amount": currency(amount), "project": self.project},
+                code="budget-transfer-too-large",
+            )
+
+        return data
+
+    def save(self):
+        instance = super().save(commit=False)
+        if not instance.pk:
+            instance.created_by = self.request.user
+        instance.save()
         return instance

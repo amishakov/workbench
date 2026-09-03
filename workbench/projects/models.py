@@ -988,7 +988,7 @@ class BudgetTransfer(Model):
         return f"{self.title} ({currency(self.amount)})"
 
     def get_absolute_url(self):
-        return self.from_project.get_absolute_url()
+        return f"{self.from_project.get_absolute_url()}#budgettransfer{self.pk}"
 
     @property
     def is_reserved(self):

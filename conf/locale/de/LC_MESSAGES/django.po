@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 11:39+0200\n"
+"POT-Creation-Date: 2026-09-03 12:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -559,7 +559,8 @@ msgstr "Ferienwochen für ein volles Anstellungsjahr."
 #: workbench/credit_control/forms.py workbench/credit_control/models.py
 #: workbench/credit_control/reporting.py workbench/notes/apps.py
 #: workbench/notes/models.py workbench/planning/models.py
-#: workbench/templates/awt/year_detail.html workbench/templates/base.html
+#: workbench/projects/models.py workbench/templates/awt/year_detail.html
+#: workbench/templates/base.html
 #: workbench/templates/credit_control/creditentry_list.html
 #: workbench/templates/notes/widget.html workbench/timer/models.py
 msgid "notes"
@@ -1614,6 +1615,7 @@ msgstr "Eine geschlossene Spesenabrechnung bleibt geschlossen."
 
 #: workbench/expenses/models.py workbench/logbook/models.py
 #: workbench/notes/models.py workbench/planning/models.py
+#: workbench/projects/models.py
 msgid "created by"
 msgstr "Erstellt von"
 
@@ -3002,6 +3004,21 @@ msgstr "Dieses Feld ist zwingend erforderlich."
 msgid "Codes must be unique."
 msgstr "Codes müssen eindeutig sein."
 
+#: workbench/projects/forms.py
+#, python-format
+msgid "Part of the total invoiced on %(project)s."
+msgstr "Ein Teil des auf %(project)s verrechneten Totals."
+
+#: workbench/projects/forms.py
+#, python-format
+msgid "Available: %(available)s."
+msgstr "Verfügbar: %(available)s."
+
+#: workbench/projects/forms.py
+#, python-format
+msgid "Moving %(amount)s away leaves %(project)s with a negative budget. Are you sure?"
+msgstr "Wenn Du %(amount)s wegschiebst, bleibt %(project)s mit einem negativen Budget zurück. Bist Du sicher?"
+
 #: workbench/projects/models.py
 msgid "internal type"
 msgstr "interner Typ"
@@ -3113,6 +3130,36 @@ msgstr "Kann Leistung von Offerte, welche nicht mehr in Vorbereitung ist, nicht 
 #: workbench/projects/models.py
 msgid "The offer must belong to the same project as the service."
 msgstr "Die Offerte muss zum gleichen Projekt gehören wie die Leistung."
+
+#: workbench/projects/models.py
+msgid "from project"
+msgstr "von Projekt"
+
+#: workbench/projects/models.py
+msgid "to project"
+msgstr "auf Projekt"
+
+#: workbench/projects/models.py
+msgid "Leave this empty to only reserve the budget for now. It stops counting towards the source project either way."
+msgstr "Leer lassen, um das Budget vorerst nur zu reservieren. Es zählt so oder so nicht mehr zum Ursprungsprojekt."
+
+#: workbench/projects/models.py
+msgid "amount"
+msgstr "Betrag"
+
+#: workbench/projects/models.py
+#: workbench/templates/projects/project_detail.html
+msgid "budget transfer"
+msgstr "Budgetverschiebung"
+
+#: workbench/projects/models.py
+#: workbench/templates/projects/project_detail.html
+msgid "budget transfers"
+msgstr "Budgetverschiebungen"
+
+#: workbench/projects/models.py
+msgid "Moving budget to the same project does not do anything."
+msgstr "Budget auf dasselbe Projekt zu verschieben bewirkt nichts."
 
 #: workbench/projects/tasks.py workbench/tools/xlsx.py
 msgid "Logbook"
@@ -4258,6 +4305,18 @@ msgstr "optional"
 #: workbench/templates/projects/project_detail.html
 msgid "No services yet."
 msgstr "Noch keine Leistungen."
+
+#: workbench/templates/projects/project_detail.html
+msgid "moved to"
+msgstr "verschoben auf"
+
+#: workbench/templates/projects/project_detail.html
+msgid "reserved, no target project yet"
+msgstr "reserviert, noch kein Zielprojekt"
+
+#: workbench/templates/projects/project_detail.html
+msgid "moved from"
+msgstr "verschoben von"
 
 #: workbench/templates/projects/project_detail.html
 msgid "Services from logbook"

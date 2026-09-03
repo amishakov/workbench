@@ -42,6 +42,7 @@ from workbench.planning.models import (
     PlannedWork,
 )
 from workbench.projects.models import (
+    BudgetTransfer,
     Campaign,
     InternalType,
     InternalTypeUser,
@@ -436,6 +437,7 @@ def _projects_project_cfg(user):
             (Offer, "project_id"),
             (Invoice, "project_id"),
             (ProjectService, "project_id"),
+            (BudgetTransfer, "from_project_id"),
         ])
         fields |= {"flat_rate"}
     if user.features[FEATURES.CAMPAIGNS]:
@@ -544,6 +546,7 @@ HISTORY = {
     Milestone: {"fields": EVERYTHING},
     Campaign: _projects_campaign_cfg,
     Project: _projects_project_cfg,
+    BudgetTransfer: {"fields": EVERYTHING},
     ProjectService: _projects_service_cfg,
     InternalType: {"fields": EVERYTHING},
     InternalTypeUser: {"fields": EVERYTHING},

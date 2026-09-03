@@ -10,6 +10,7 @@ from workbench.invoices.models import Invoice
 from workbench.projects.models import BudgetTransfer
 from workbench.reporting.project_budget_statistics import project_budget_statistics
 from workbench.reporting.squeeze import project_gross_margin, squeeze_data
+from workbench.tools.forms import WarningsForm
 from workbench.tools.validation import in_days
 
 
@@ -172,3 +173,86 @@ class BudgetTransferTest(TestCase):
         with self.assertRaises(ValidationError) as cm:
             transfer.clean_fields()
         self.assertIn("to_project", cm.exception.error_dict)
+
+    def test_crud_from_the_project_page(self):
+        """Transfers are created, edited and deleted from the source project"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        target = self.reconception_project(user=user, hours=40)
+        self.client.force_login(user)
+
+        response = self.client.get(source.urls["createbudgettransfer"])
+        self.assertContains(response, "Available: 12’000.00.")
+
+        # Reserve first, without naming a target project.
+        response = self.client.post(
+            source.urls["createbudgettransfer"],
+            {
+                "modal-title": "Re-Konzeption",
+                "modal-amount": "8000",
+                "modal-notes": "",
+            },
+            headers={"x-requested-with": "XMLHttpRequest"},
+        )
+        self.assertEqual(response.status_code, 201)
+        transfer = BudgetTransfer.objects.get()
+        self.assertTrue(transfer.is_reserved)
+
+        response = self.client.get(source.get_absolute_url())
+        self.assertContains(response, "reserved, no target project yet")
+        self.assertContains(response, "8’000.00")
+
+        # Later on, point it at the project which does the work.
+        response = self.client.post(
+            transfer.urls["update"],
+            {
+                "modal-to_project": target.pk,
+                "modal-title": "Re-Konzeption",
+                "modal-amount": "8000",
+                "modal-notes": "",
+            },
+            headers={"x-requested-with": "XMLHttpRequest"},
+        )
+        self.assertEqual(response.status_code, 202)
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.to_project, target)
+
+        response = self.client.get(target.get_absolute_url())
+        self.assertContains(response, "Re-Konzeption")
+
+        response = self.client.post(
+            transfer.urls["delete"],
+            headers={"x-requested-with": "XMLHttpRequest"},
+        )
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(BudgetTransfer.objects.count(), 0)
+
+    def test_warns_when_moving_more_than_the_project_has(self):
+        """Emptying a project's budget past zero has to be confirmed"""
+        user = factories.UserFactory.create()
+        source = self.campaign_project(user=user, invoiced=Decimal(12000), hours=40)
+        self.client.force_login(user)
+
+        response = self.client.post(
+            source.urls["createbudgettransfer"],
+            {
+                "modal-title": "Too much",
+                "modal-amount": "20000",
+                "modal-notes": "",
+            },
+            headers={"x-requested-with": "XMLHttpRequest"},
+        )
+        self.assertContains(response, "budget-transfer-too-large")
+        self.assertEqual(BudgetTransfer.objects.count(), 0)
+
+        response = self.client.post(
+            source.urls["createbudgettransfer"],
+            {
+                "modal-title": "Too much",
+                "modal-amount": "20000",
+                "modal-notes": "",
+                WarningsForm.ignore_warnings_id: "budget-transfer-too-large",
+            },
+            headers={"x-requested-with": "XMLHttpRequest"},
+        )
+        self.assertEqual(response.status_code, 201)

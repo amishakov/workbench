@@ -699,6 +699,60 @@
           </div>
         </div>
       {% endfor %}
+      {% with transfers_out=object.budget_transfers_out.all transfers_in=object.budget_transfers_in.all %}
+        {% if transfers_out or transfers_in %}
+          <div class="card my-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <h5 class="d-inline my-0">
+                {% translate 'budget transfers' %}
+              </h5>
+            </div>
+            <div class="list-group list-group-flush">
+              {% for transfer in transfers_out %}
+                <div class="list-group-item" id="budgettransfer{{ transfer.pk }}">
+                  <div class="d-flex w-100 justify-content-between">
+                    <span>
+                      &minus;{{ transfer.amount|currency }}
+                      {{ transfer.title }}
+                      <br>
+                      <small class="text-muted">
+                        {% if transfer.to_project %}
+                          {% translate 'moved to' %} {% link_or_none transfer.to_project %}
+                        {% else %}
+                          {% translate 'reserved, no target project yet' %}
+                        {% endif %}
+                      </small>
+                    </span>
+                    <span class="text-nowrap">
+                      <a href="{{ transfer.urls.update }}" data-ajaxmodal>{% translate 'Update' %}</a>
+                      <a href="{{ transfer.urls.delete }}" data-ajaxmodal>{% translate 'Delete' %}</a>
+                    </span>
+                  </div>
+                  {% if transfer.notes %}<small>{{ transfer.notes|linebreaksbr }}</small>{% endif %}
+                </div>
+              {% endfor %}
+              {% for transfer in transfers_in %}
+                <div class="list-group-item">
+                  <div class="d-flex w-100 justify-content-between">
+                    <span>
+                      &plus;{{ transfer.amount|currency }}
+                      {{ transfer.title }}
+                      <br>
+                      <small class="text-muted">
+                        {% translate 'moved from' %} {% link_or_none transfer.from_project %}
+                      </small>
+                    </span>
+                    <span class="text-nowrap">
+                      <a href="{{ transfer.urls.update }}" data-ajaxmodal>{% translate 'Update' %}</a>
+                    </span>
+                  </div>
+                  {% if transfer.notes %}<small>{{ transfer.notes|linebreaksbr }}</small>{% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      {% endwith %}
       {% if request.user.features.CONTROLLING and object.project_invoices %}
         <div class="card my-3">
           <div class="card-header d-flex align-items-center justify-content-between">
@@ -771,6 +825,14 @@
         <a href="{{ project.urls.createservice }}" class="btn btn-primary" data-ajaxmodal>
           {% include "svg/plus.svg" %}
           {% translate 'service'|capfirst %}
+        </a>
+        <a
+          href="{{ project.urls.createbudgettransfer }}"
+          class="btn btn-primary"
+          data-ajaxmodal
+        >
+          {% include "svg/plus.svg" %}
+          {% translate 'budget transfer' %}
         </a>
       {% endif %}
       <a href="{{ project.urls.createhours }}" class="btn btn-primary" data-ajaxmodal>
