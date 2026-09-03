@@ -12,6 +12,7 @@ from workbench.invoices.tasks import (
     tuesday_autodunning,
 )
 from workbench.planning.updates import changes_mails
+from workbench.projects.tasks import send_budget_alerts
 from workbench.reporting.tasks import create_accruals_for_last_month
 
 
@@ -27,6 +28,7 @@ class Command(BaseCommand):
         changes_mails()
         annual_working_time_warnings_mails()
         send_unsent_projected_invoices_reminders()
+        send_budget_alerts()
         tuesday_autodunning()
         prune_audit()
         work_anniversaries_notice()

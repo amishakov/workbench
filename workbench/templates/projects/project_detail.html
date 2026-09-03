@@ -59,6 +59,23 @@
                   {% bar gs.logged_cost gs.service_cost %}
                 </div>
               </div>
+              {% if project.budget_alert_at %}
+                <div class="row">
+                  <div class="col-md-12">
+                    <small class="text-muted">
+                      {% blocktranslate with amount=project.budget_alert_at|currency trimmed %}
+                        Budget alert at {{ amount }}
+                      {% endblocktranslate %}
+                      {% if project.budget_alert_sent_at %}
+                        &ndash;
+                        {% blocktranslate with sent_on=project.budget_alert_sent_at|local_date_format trimmed %}
+                          sent on {{ sent_on }}
+                        {% endblocktranslate %}
+                      {% endif %}
+                    </small>
+                  </div>
+                </div>
+              {% endif %}
             </span>
             <span class="col-md-5 col-lg-6">
               {% if request.user.features.CONTROLLING %}

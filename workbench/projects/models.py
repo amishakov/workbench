@@ -343,6 +343,18 @@ class Project(Model):
         _("suppress planning update mails for this project for everyone"),
         default=False,
     )
+    budget_alert_at = MoneyField(
+        _("send a mail when the logged cost reaches"),
+        blank=True,
+        null=True,
+        help_text=_(
+            "The contact person receives a mail once. Useful when you agreed"
+            " with the customer to get in touch before the cost cap is used up."
+        ),
+    )
+    budget_alert_sent_at = models.DateTimeField(
+        _("budget alert sent at"), blank=True, null=True, editable=False
+    )
 
     objects = ProjectQuerySet.as_manager()
 
@@ -350,6 +362,10 @@ class Project(Model):
         ordering = ("-id",)
         verbose_name = _("project")
         verbose_name_plural = _("projects")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_budget_alert_at = self.budget_alert_at
 
     def __str__(self):
         return f"{self.code} {self.title} - {self.owned_by.get_short_name()}"
@@ -388,10 +404,16 @@ class Project(Model):
                 self.contact.full_name if self.contact else "",
             ]
         )
+        if self.budget_alert_at != self._orig_budget_alert_at:
+            # A new threshold deserves a new alert.
+            self.budget_alert_sent_at = None
+
         if new:
             super().save()
         else:
             super().save(*args, **kwargs)
+
+        self._orig_budget_alert_at = self.budget_alert_at
 
     save.alters_data = True
 

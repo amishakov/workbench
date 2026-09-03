@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 10:54+0200\n"
+"POT-Creation-Date: 2026-09-03 11:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3045,6 +3045,18 @@ msgid "suppress planning update mails for this project for everyone"
 msgstr "Planungsupdate-Mails für dieses Projekt für alle unterdrücken"
 
 #: workbench/projects/models.py
+msgid "send a mail when the logged cost reaches"
+msgstr "Mail senden, wenn die aufgeschriebenen Kosten erreichen"
+
+#: workbench/projects/models.py
+msgid "The contact person receives a mail once. Useful when you agreed with the customer to get in touch before the cost cap is used up."
+msgstr "Die verantwortliche Person erhält einmalig eine Mail. Nützlich, wenn Du mit der Kundschaft vereinbart hast, Dich zu melden, bevor das Kostendach aufgebraucht ist."
+
+#: workbench/projects/models.py
+msgid "budget alert sent at"
+msgstr "Budgetwarnung versendet am"
+
+#: workbench/projects/models.py
 msgid "Leave this empty if you do not want to close the project yet."
 msgstr "Bitte leer lassen, falls Du das Projekt noch nicht schliessen willst."
 
@@ -3096,6 +3108,22 @@ msgstr "Kann Leistung von Offerte, welche nicht mehr in Vorbereitung ist, nicht 
 #: workbench/projects/models.py
 msgid "The offer must belong to the same project as the service."
 msgstr "Die Offerte muss zum gleichen Projekt gehören wie die Leistung."
+
+#: workbench/projects/tasks.py workbench/tools/xlsx.py
+msgid "Logbook"
+msgstr "Logbuch"
+
+#: workbench/projects/tasks.py
+msgid "Alert at"
+msgstr "Warnen ab"
+
+#: workbench/projects/tasks.py
+msgid "Sold"
+msgstr "Verkauft"
+
+#: workbench/projects/tasks.py
+msgid "Budget alert"
+msgstr "Budgetwarnung"
 
 #: workbench/projects/urls.py
 #, python-format
@@ -4063,6 +4091,16 @@ msgid "Cost"
 msgstr "Kosten"
 
 #: workbench/templates/projects/project_detail.html
+#, python-format
+msgid "Budget alert at %(amount)s"
+msgstr "Budgetwarnung ab %(amount)s"
+
+#: workbench/templates/projects/project_detail.html
+#, python-format
+msgid "sent on %(sent_on)s"
+msgstr "versendet am %(sent_on)s"
+
+#: workbench/templates/projects/project_detail.html
 msgid "Budget retainment"
 msgstr "Zurückbehaltung von Budget"
 
@@ -4832,10 +4870,6 @@ msgstr "Nach Leistung und Monat"
 #: workbench/tools/xlsx.py
 msgid "By user and month"
 msgstr "Nach Nutzer:in und Monat"
-
-#: workbench/tools/xlsx.py
-msgid "Logbook"
-msgstr "Logbuch"
 
 #: workbench/tools/xlsx.py
 msgid "Total hours"

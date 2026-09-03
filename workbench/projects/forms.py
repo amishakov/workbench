@@ -253,6 +253,7 @@ class ProjectForm(ModelForm):
             "internal_type",
             "suppress_planning_update_mails",
             "flat_rate",
+            "budget_alert_at",
             "closed_on",
         )
         widgets = {
