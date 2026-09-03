@@ -145,6 +145,7 @@ class InvoiceForm(PostalAddressSelectionForm):
             "owned_by",
             "status",
             "closed_on",
+            "postpone_reminders_until",
             "payment_notice",
             "postal_address",
             "type",
@@ -175,6 +176,10 @@ class InvoiceForm(PostalAddressSelectionForm):
 
         self.fields["type"].choices = Invoice.TYPE_CHOICES
         self.fields["type"].disabled = True
+
+        if self.instance.status != self.instance.SENT:
+            # Postponing reminders only makes sense for invoices which are out.
+            self.fields.pop("postpone_reminders_until")
 
         if self.instance.project:
             self.fields["customer"].disabled = True
@@ -301,9 +306,27 @@ class InvoiceForm(PostalAddressSelectionForm):
             return False
         return bool(from_status > to_status or from_status >= Invoice.PAID)
 
+    def _warn_about_postponed_reminders(self, data):
+        if (postpone := data.get("postpone_reminders_until")) and postpone > in_days(
+            Invoice.UNEXPECTED_POSTPONE_REMINDERS_DAYS
+        ):
+            self.add_warning(
+                _(
+                    "You are postponing reminders until %(date)s, which is more"
+                    " than %(days)s days from now. Are you sure?"
+                )
+                % {
+                    "date": local_date_format(postpone),
+                    "days": Invoice.UNEXPECTED_POSTPONE_REMINDERS_DAYS,
+                },
+                code="postpone-reminders-far-out",
+            )
+
     def clean(self):
         data = super().clean()
         s_dict = dict(Invoice.STATUS_CHOICES)
+
+        self._warn_about_postponed_reminders(data)
 
         if (subtotal := data.get("subtotal")) and subtotal < 0:
             self.add_error(
@@ -333,6 +356,7 @@ class InvoiceForm(PostalAddressSelectionForm):
             "status",
             "closed_on",
             "payment_notice",
+            "postpone_reminders_until",
             "third_party_costs",
         }:
             self.add_warning(

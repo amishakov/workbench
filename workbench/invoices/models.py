@@ -39,7 +39,11 @@ class InvoiceQuerySet(SearchQuerySet):
 
     def overdue(self):
         return self.filter(
-            status=Invoice.SENT, due_on__isnull=False, due_on__lte=in_days(-15)
+            Q(postpone_reminders_until__isnull=True)
+            | Q(postpone_reminders_until__lte=dt.date.today()),
+            status=Invoice.SENT,
+            due_on__isnull=False,
+            due_on__lte=in_days(-15),
         )
 
     def autodunning(self):
@@ -60,6 +64,13 @@ class InvoiceQuerySet(SearchQuerySet):
 
 @model_urls
 class Invoice(ModelWithTotal):
+    # Reminders may be postponed at most this far into the future. Anything
+    # beyond this isn't a clarification anymore, it's forgetting about the
+    # invoice.
+    MAX_POSTPONE_REMINDERS_DAYS = 60
+    # Postponements longer than this are possible but have to be confirmed.
+    UNEXPECTED_POSTPONE_REMINDERS_DAYS = 30
+
     IN_PREPARATION = 10
     SENT = 20
     PAID = 40
@@ -116,6 +127,15 @@ class Invoice(ModelWithTotal):
         ),
     )
     last_reminded_on = models.DateField(_("last reminded on"), blank=True, null=True)
+    postpone_reminders_until = models.DateField(
+        _("postpone reminders until"),
+        blank=True,
+        null=True,
+        help_text=_(
+            "The invoice is left out of the reminders list until this date,"
+            " for example while a question of the customer is being clarified."
+        ),
+    )
 
     title = models.CharField(_("title"), max_length=200)
     description = models.TextField(_("description"), blank=True)
@@ -273,6 +293,17 @@ class Invoice(ModelWithTotal):
         if self.invoiced_on and self.due_on and self.invoiced_on > self.due_on:
             errors["due_on"] = _("Due date has to be after invoice date.")
 
+        if self.postpone_reminders_until and self.postpone_reminders_until > in_days(
+            self.MAX_POSTPONE_REMINDERS_DAYS
+        ):
+            errors["postpone_reminders_until"] = _(
+                "Reminders cannot be postponed by more than %(days)s days"
+                " (that would be later than %(date)s)."
+            ) % {
+                "days": self.MAX_POSTPONE_REMINDERS_DAYS,
+                "date": local_date_format(in_days(self.MAX_POSTPONE_REMINDERS_DAYS)),
+            }
+
         if (
             self.type in {self.SERVICES, self.DOWN_PAYMENT, self.CREDIT}
             and not self.project
@@ -333,11 +364,25 @@ class Invoice(ModelWithTotal):
             "closed_on": (
                 local_date_format(self.closed_on) if self.closed_on else None
             ),
+            "postponed_until": (
+                local_date_format(self.postpone_reminders_until)
+                if self.postpone_reminders_until
+                else None
+            ),
         }
 
         if self.status == self.IN_PREPARATION:
             return _("In preparation since %(created_at)s") % d
         if self.status == self.SENT:
+            if self.reminders_are_postponed:
+                return (
+                    _(
+                        "Sent on %(invoiced_on)s,"
+                        " reminders postponed until %(postponed_until)s"
+                    )
+                    % d
+                )
+
             if self.last_reminded_on:
                 return _("Sent on %(invoiced_on)s, reminded on %(reminded_on)s") % d
 
@@ -358,6 +403,13 @@ class Invoice(ModelWithTotal):
                 relative = timesince(self.last_reminded_on, depth=1)
             return f"{local_date_format(self.last_reminded_on)} ({relative})"
         return gettext("Not reminded yet")
+
+    @property
+    def reminders_are_postponed(self):
+        return bool(
+            self.postpone_reminders_until
+            and self.postpone_reminders_until > dt.date.today()
+        )
 
     def payment_reminders_sent_at(self):
         from workbench.tools.history import (

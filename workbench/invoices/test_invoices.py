@@ -1017,6 +1017,84 @@ class InvoicesTest(TestCase):
         response = self.client.get("/invoices/reminders/")
         self.assertContains(response, "Not reminded yet", 1)
 
+    def test_postpone_reminders(self):
+        """Postponing reminders removes invoices from the reminders list"""
+        invoice = factories.InvoiceFactory.create(
+            invoiced_on=in_days(-60),
+            due_on=in_days(-45),
+            status=Invoice.SENT,
+        )
+
+        self.client.force_login(factories.UserFactory.create())
+        response = self.client.get("/invoices/reminders/")
+        self.assertContains(response, "Not reminded yet", 1)
+
+        invoice.postpone_reminders_until = in_days(15)
+        invoice.save()
+        self.assertTrue(invoice.reminders_are_postponed)
+        self.assertNotIn(invoice, Invoice.objects.overdue())
+        self.assertNotIn(invoice, Invoice.objects.autodunning())
+
+        response = self.client.get("/invoices/reminders/")
+        self.assertNotContains(response, "Not reminded yet")
+
+        # The invoice reappears once the postponement has run out.
+        invoice.postpone_reminders_until = dt.date.today()
+        invoice.save()
+        self.assertFalse(invoice.reminders_are_postponed)
+        self.assertIn(invoice, Invoice.objects.overdue())
+
+        response = self.client.get("/invoices/reminders/")
+        self.assertContains(response, "Not reminded yet", 1)
+
+    def test_postpone_reminders_limit(self):
+        """Reminders cannot be postponed indefinitely"""
+        invoice = factories.InvoiceFactory.create(
+            invoiced_on=in_days(-60),
+            due_on=in_days(-45),
+            status=Invoice.SENT,
+        )
+
+        invoice.postpone_reminders_until = in_days(
+            Invoice.MAX_POSTPONE_REMINDERS_DAYS + 1
+        )
+        with self.assertRaises(ValidationError) as cm:
+            invoice.clean_fields(exclude={"postal_address"})
+        self.assertIn("postpone_reminders_until", cm.exception.error_dict)
+
+        invoice.postpone_reminders_until = in_days(Invoice.MAX_POSTPONE_REMINDERS_DAYS)
+        invoice.clean_fields(exclude={"postal_address"})
+
+    def test_postpone_reminders_warning(self):
+        """Postponing reminders far out warns before saving"""
+        invoice = factories.InvoiceFactory.create(
+            invoiced_on=in_days(-60),
+            due_on=in_days(-45),
+            status=Invoice.SENT,
+            postal_address="Test\nStreet\nCity",
+        )
+        self.client.force_login(invoice.owned_by)
+
+        def post(days):
+            return self.client.post(
+                invoice.urls["update"],
+                invoice_to_dict(
+                    invoice,
+                    postpone_reminders_until=in_days(days).isoformat(),
+                ),
+            )
+
+        response = post(Invoice.UNEXPECTED_POSTPONE_REMINDERS_DAYS + 1)
+        self.assertContains(response, "postpone-reminders-far-out")
+
+        response = post(Invoice.UNEXPECTED_POSTPONE_REMINDERS_DAYS)
+        self.assertRedirects(response, invoice.get_absolute_url())
+        invoice.refresh_from_db()
+        self.assertEqual(
+            invoice.postpone_reminders_until,
+            in_days(Invoice.UNEXPECTED_POSTPONE_REMINDERS_DAYS),
+        )
+
     def test_reset_last_invoiced_on(self):
         """last_reminded_on < invoiced_on values are silently corrected/dropped"""
         invoice = factories.InvoiceFactory.create(
