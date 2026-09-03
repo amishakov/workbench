@@ -181,8 +181,12 @@ class BudgetTransferTest(TestCase):
         target = self.reconception_project(user=user, hours=40)
         self.client.force_login(user)
 
+        # The project page opens these with data-ajaxmodal, so the form views
+        # have to answer with modal markup and not with a whole page.
         response = self.client.get(source.urls["createbudgettransfer"])
         self.assertContains(response, "Available: 12’000.00.")
+        self.assertContains(response, '<div class="modal">')
+        self.assertNotContains(response, "<!DOCTYPE html>")
 
         # Reserve first, without naming a target project.
         response = self.client.post(
@@ -219,6 +223,11 @@ class BudgetTransferTest(TestCase):
 
         response = self.client.get(target.get_absolute_url())
         self.assertContains(response, "Re-Konzeption")
+
+        for url in (transfer.urls["update"], transfer.urls["delete"]):
+            response = self.client.get(url)
+            self.assertContains(response, '<div class="modal">')
+            self.assertNotContains(response, "<!DOCTYPE html>")
 
         response = self.client.post(
             transfer.urls["delete"],
