@@ -427,6 +427,8 @@ def _projects_project_cfg(user):
         "type",
         "created_at",
         "closed_on",
+        "budget_alert_at",
+        "budget_alert_sent_at",
     }
     related = []
     if user.features[FEATURES.CONTROLLING]:

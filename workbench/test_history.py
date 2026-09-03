@@ -211,6 +211,17 @@ class HistoryTest(TestCase):
         url = f"/history/projects_project/id/{project.pk}/"
         self.assert_only_visible_with(url, "'Flat rate'", FEATURES.CONTROLLING)
 
+    def test_project_budget_alert_history(self):
+        """Budget alert changes show up in the project history"""
+        project = factories.ProjectFactory.create()
+        project.budget_alert_at = 5000
+        project.save()
+
+        self.client.force_login(project.owned_by)
+        response = self.client.get(f"/history/projects_project/id/{project.pk}/")
+        self.assertContains(response, "Send a mail when the logged cost reaches")
+        self.assertContains(response, "5000")
+
     def test_project_service_visibility(self):
         """Services have various fields which are only visible with some feature"""
         service = factories.ServiceFactory.create()
