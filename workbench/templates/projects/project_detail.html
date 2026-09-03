@@ -130,7 +130,8 @@
                       <td>
                         {{ gs.accepted_offers_total_excl_tax|currency }}
                         {% if gs.accepted_offers_discount %}
-                          ({% blocktranslate with discount=gs.accepted_offers_discount|currency trimmed %}includes discount of
+                          ({% blocktranslate with discount=gs.accepted_offers_discount|currency trimmed %}includes
+                            discount of
                             {{ discount }}{% endblocktranslate %})
                         {% endif %}
                       </td>
@@ -348,11 +349,17 @@
                       {% translate 'is budget retainer' %}
                     </small>
                   {% endif %}
-                  {% for deal in offer.deals.all %}
-                    {% if forloop.first %}<br><small>{% translate 'Related deals' %}: {% endif %}
-                    {% link_or_none deal %}{% if forloop.last %}</small>{% else %},
+                  {% with deals=offer.deals.all %}
+                    {% if deals %}
+                      <br>
+                      <small>
+                        {% translate 'Related deals' %}:
+                        {% for deal in deals %}
+                          {% link_or_none deal %}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                      </small>
                     {% endif %}
-                  {% endfor %}
+                  {% endwith %}
                 </div>
                 <div>
                   {% if request.user.features.CONTROLLING %}
