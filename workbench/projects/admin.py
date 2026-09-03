@@ -43,3 +43,10 @@ class ProjectAdmin(admin.ModelAdmin):
 class CampaignAdmin(admin.ModelAdmin):
     list_display = ["title", "customer", "owned_by"]
     raw_id_fields = ["customer", "owned_by"]
+
+
+@admin.register(models.BudgetTransfer)
+class BudgetTransferAdmin(admin.ModelAdmin):
+    list_display = ["from_project", "to_project", "title", "amount", "created_at"]
+    raw_id_fields = ["from_project", "to_project", "created_by"]
+    search_fields = ["title"]
