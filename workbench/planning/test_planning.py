@@ -78,6 +78,29 @@ class PlanningTest(TestCase):
         (c,) = report["per_customer"]
         self.assertEqual(len(c["per_week"]), 1)
 
+    def test_milestone_color(self):
+        """The milestone color overrides the service type color of its work"""
+        milestone = factories.MilestoneFactory.create(
+            date=monday() + dt.timedelta(days=3), color="#123456"
+        )
+        pw = factories.PlannedWorkFactory.create(
+            project=milestone.project, milestone=milestone, weeks=[monday()]
+        )
+        other = factories.PlannedWorkFactory.create(
+            project=milestone.project, user=pw.user, weeks=[monday()]
+        )
+
+        report = reporting.project_planning(milestone.project)
+        (project,) = report["projects_offers"]
+        colors = {
+            entry["work"]["id"]: entry["work"]["color"]
+            for offer in project["offers"]
+            for entry in offer["work_list"]
+        }
+        self.assertEqual(colors[pw.id], "#123456")
+        self.assertEqual(colors[other.id], "")
+        self.assertEqual(project["project"]["milestones"][0]["color"], "#123456")
+
     def test_planning_search_forms(self):
         """Planning request search form branch test"""
 

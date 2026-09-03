@@ -26,7 +26,13 @@ class MilestoneSearchForm(Form):
 class MilestoneForm(ModelForm):
     class Meta:
         model = Milestone
-        fields = ["date", "phase_starts_on", "title", "estimated_total_hours"]
+        fields = [
+            "date",
+            "phase_starts_on",
+            "title",
+            "estimated_total_hours",
+            "color",
+        ]
 
     def __init__(self, *args, **kwargs):
         self.project = kwargs.pop("project", None)

@@ -233,7 +233,7 @@
   }
 
   &.is-milestone {
-    background-color: var(--bs-pink);
+    background-color: var(--milestone-color, var(--bs-pink));
   }
 
   &.is-milestone-graphic {
@@ -284,7 +284,7 @@
   }
 
   &.is-pw {
-    background-color: var(--bs-teal);
+    background-color: var(--st-color, var(--bs-teal));
   }
 
   &.is-absence,

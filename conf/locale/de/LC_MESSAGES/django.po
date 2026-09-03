@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 10:50+0200\n"
+"POT-Creation-Date: 2026-09-03 10:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1784,6 +1784,11 @@ msgid "This invoice is freezed, only a small subset of fields are editable."
 msgstr "Diese Rechnung ist eingefroren, nur wenige Felder sind bearbeitbar."
 
 #: workbench/invoices/forms.py
+#, python-format
+msgid "You are postponing reminders until %(date)s, which is more than %(days)s days from now. Are you sure?"
+msgstr "Du schiebst die Zahlungserinnerungen bis am %(date)s auf, das sind mehr als %(days)s Tage ab heute. Bist Du sicher?"
+
+#: workbench/invoices/forms.py
 msgid "A negative subtotal is almost certainly an error. Did you want to create a credit?"
 msgstr "Ein negatives Zwischentotal ist fast sicher ein Fehler. Wolltest Du eine Gutschrift erstellen?"
 
@@ -1806,11 +1811,6 @@ msgstr "Status von '%(from)s' zu '%(to)s' ändern. Bist Du sicher?"
 #, python-format
 msgid "Moving status from '%(from)s' to '%(to)s' with an invoice date in the past (%(date)s). This may be correct but maybe it's not what you want."
 msgstr "Du änderst den Status von '%(from)s' zu '%(to)s' mit einem Rechnungsdatum in der Vergangenheit (%(date)s). Dies kann korrekt sein, aber ist möglicherweise nicht das, was Du willst."
-
-#: workbench/invoices/forms.py
-#, python-format
-msgid "You are postponing reminders until %(date)s, which is more than %(days)s days from now. Are you sure?"
-msgstr "Du schiebst die Zahlungserinnerungen bis am %(date)s auf, das sind mehr als %(days)s Tage ab heute. Bist Du sicher?"
 
 #: workbench/invoices/forms.py
 msgid "Attention! The invoice date is more than three months in the future!"
@@ -2704,6 +2704,14 @@ msgstr "Geplante Arbeit löschen?"
 msgid "phase starts on"
 msgstr "Phase startet am"
 
+#: workbench/planning/models.py workbench/services/models.py
+msgid "color"
+msgstr "Farbe"
+
+#: workbench/planning/models.py
+msgid "Planned work belonging to this milestone is shown in this color instead of the color of its service type."
+msgstr "Geplante Arbeit, die zu diesem Meilenstein gehört, wird in dieser Farbe dargestellt statt in der Farbe ihrer Leistungsart."
+
 #: workbench/planning/models.py
 msgid "planned hours"
 msgstr "geplante Stunden"
@@ -3349,10 +3357,6 @@ msgstr "Datum setzen"
 #, python-format
 msgid "Invoices for the selected period may not be complete yet (cutoff: %(cutoff)s)."
 msgstr "Die Rechnungen für den gewählten Zeitraum sind möglicherweise noch nicht vollständig (Stichtag: %(cutoff)s)."
-
-#: workbench/services/models.py
-msgid "color"
-msgstr "Farbe"
 
 #: workbench/services/models.py
 msgid "service type"

@@ -1,6 +1,7 @@
 import datetime as dt
 from decimal import Decimal
 
+from colorfield.fields import ColorField
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -34,6 +35,14 @@ class Milestone(Model):
     title = models.CharField(_("title"), max_length=200)
 
     phase_starts_on = models.DateField(_("phase starts on"), blank=True, null=True)
+    color = ColorField(
+        _("color"),
+        blank=True,
+        help_text=_(
+            "Planned work belonging to this milestone is shown in this color"
+            " instead of the color of its service type."
+        ),
+    )
 
     estimated_total_hours = HoursField(
         _("planned hours"),

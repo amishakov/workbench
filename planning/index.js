@@ -486,6 +486,11 @@ function WorkedHours({ project }) {
 //   return `linear-gradient(to right, transparent ${start}%, rgb(255, 200, 200) ${start}%, rgb(255, 200, 200) ${end}%, transparent ${end}%)`
 // }
 
+// Milestones may carry their own color; when set it overrides the color of the
+// service type so that everything belonging to one milestone reads as a group.
+const milestoneColorStyle = (color) =>
+  color ? { "--st-color": color, "--milestone-color": color } : undefined
+
 const weekdayBackgroundPosition = (weekday) => {
   const width = 12
   const start = Math.floor(((100 - width) * (weekday - 1)) / 7)
@@ -554,6 +559,7 @@ const Milestones = ({ project }) => {
                   column={FIRST_DATA_COLUMN + range.start}
                   colspan={`span ${range.length}`}
                   className={"planning--range planning--small is-milestone"}
+                  style={milestoneColorStyle(m.color)}
                   tag="a"
                   href={m.url}
                   data-ajaxmodal
@@ -720,6 +726,7 @@ function Work({ work, hours_per_week, absences, isEven }) {
             className={`planning--range planning--small is-pw ${
               work.is_provisional ? "is-provisional" : ""
             } st-${work.service_type_id}`}
+            style={milestoneColorStyle(work.color)}
             tag="a"
             href={work.url}
             data-ajaxmodal
@@ -811,6 +818,7 @@ const ExternalWork = ({ idx, work }) => {
             column={FIRST_DATA_COLUMN + range.start}
             colspan={`span ${range.length}`}
             className={`planning--range planning--small is-pw st-${work.service_type_id}`}
+            style={milestoneColorStyle(work.color)}
             tag="a"
             href={work.url}
             data-ajaxmodal

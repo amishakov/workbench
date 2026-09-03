@@ -107,6 +107,7 @@ class Planning:
                         local_date_format(date_until, fmt="d.m."),
                     ),
                     "service_type_id": pw.service_type_id,
+                    "color": pw.milestone.color if pw.milestone else "",
                     "is_provisional": pw.is_provisional,
                     "tooltip": ", ".join(
                         filter(
@@ -150,6 +151,7 @@ class Planning:
                         local_date_format(date_until, fmt="d.m."),
                     ),
                     "service_type_id": ew.service_type_id,
+                    "color": ew.milestone.color if ew.milestone else "",
                     "tooltip": str(ew.service_type) if ew.service_type else None,
                     "by_week": [1 if w in ew.weeks else 0 for w in self.weeks],
                 })
@@ -180,6 +182,7 @@ class Planning:
             self._milestones[project][milestone].update({
                 "id": milestone.id,
                 "title": milestone.title,
+                "color": milestone.color,
                 "dow": local_date_format(milestone.date, fmt="l, j.n."),
                 "date": local_date_format(milestone.date, fmt="j.n."),
                 "range": "{} – {}".format(
