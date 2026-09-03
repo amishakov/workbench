@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.utils.translation import deactivate_all
 
 from workbench import factories
+from workbench.offers.models import Offer
 from workbench.projects.models import Project
 from workbench.projects.tasks import send_budget_alerts
 
@@ -92,3 +93,36 @@ class BudgetAlertsTest(TestCase):
 
         send_budget_alerts()
         self.assertEqual(len(mail.outbox), 0)
+
+    def accepted_offer(self, project, cost, *, is_budget_retainer=False):
+        offer = factories.OfferFactory.create(
+            project=project,
+            status=Offer.ACCEPTED,
+            is_budget_retainer=is_budget_retainer,
+        )
+        # The offer total is derived from its services.
+        factories.ServiceFactory.create(project=project, offer=offer, cost=cost)
+        offer.save()
+        offer.refresh_from_db()
+        return offer
+
+    def test_form_offers_percentages_of_the_cost_cap(self):
+        """The form suggests percentages of the accepted offers total"""
+        project = factories.ProjectFactory.create()
+        self.client.force_login(project.owned_by)
+
+        # No accepted offers yet: only the currency hint, no shortcuts.
+        response = self.client.get(project.urls["update"])
+        self.assertContains(response, "the logged cost reaches (CHF)")
+        self.assertNotContains(response, "Cost cap:")
+
+        offer = self.accepted_offer(project, Decimal(20000))
+        self.assertEqual(offer.total_excl_tax, Decimal(20000))
+        self.accepted_offer(project, Decimal(5000), is_budget_retainer=True)
+
+        response = self.client.get(project.urls["update"])
+        # The budget retainer is not part of the cost cap.
+        self.assertContains(response, "Cost cap: 20’000.00")
+        self.assertContains(response, 'data-field-value="15000.00">75%</a>')
+        self.assertContains(response, 'data-field-value="16000.00">80%</a>')
+        self.assertContains(response, 'data-field-value="18000.00">90%</a>')

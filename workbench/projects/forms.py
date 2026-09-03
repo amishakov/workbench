@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.forms.models import inlineformset_factory
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.text import capfirst
 from django.utils.translation import gettext, gettext_lazy as _, override
 
@@ -13,7 +13,7 @@ from workbench.invoices.models import ProjectedInvoice
 from workbench.projects.models import Campaign, Project, Service
 from workbench.reporting.models import FreezeDate
 from workbench.services.models import ServiceType
-from workbench.tools.formats import local_date_format
+from workbench.tools.formats import Z2, currency, local_date_format
 from workbench.tools.forms import (
     Autocomplete,
     DateInput,
@@ -332,6 +332,40 @@ class ProjectForm(ModelForm):
             self.fields.pop("cost_center")
         if not self.request.user.features[FEATURES.PLANNING]:
             self.fields.pop("suppress_planning_update_mails")
+
+        budget_alert_at = self.fields["budget_alert_at"]
+        budget_alert_at.label = (
+            f"{budget_alert_at.label} ({settings.WORKBENCH.CURRENCY})"
+        )
+        if self.instance.pk and (
+            # Same definition as "sold" in project_budget_statistics(): budget
+            # retainers hold budget back instead of allocating it.
+            cost_cap := sum(
+                (
+                    offer.total_excl_tax
+                    for offer in self.instance.offers.accepted()
+                    if not offer.is_budget_retainer
+                ),
+                Z2,
+            )
+        ):
+            budget_alert_at.help_text = format_html(
+                "{} {}",
+                budget_alert_at.help_text,
+                format_html(
+                    _("Cost cap: {cost_cap}. Use {percentages}."),
+                    cost_cap=currency(cost_cap),
+                    percentages=format_html_join(
+                        ", ",
+                        '<a href="#" data-field-value="{}">{}%</a>',
+                        (
+                            ((cost_cap / 100 * percentage).quantize(Z2), percentage)
+                            for percentage in (75, 80, 90)
+                        ),
+                    ),
+                ),
+            )
+
         if self.instance.pk:
             self.fields["closed_on"].help_text = format_html(
                 '{} <a href="#" data-field-value="{}">{}</a>',

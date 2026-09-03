@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-03 11:03+0200\n"
+"POT-Creation-Date: 2026-09-03 11:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2937,6 +2937,11 @@ msgstr "Intern"
 #: workbench/projects/forms.py
 msgid "Not internal"
 msgstr "Nicht intern"
+
+#: workbench/projects/forms.py
+#, python-brace-format
+msgid "Cost cap: {cost_cap}. Use {percentages}."
+msgstr "Kostendach: {cost_cap}. Verwende {percentages}."
 
 #: workbench/projects/forms.py
 msgid "Set predefined value:"
