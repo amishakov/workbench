@@ -27,6 +27,9 @@ Edit `conf/locale/de/LC_MESSAGES/django.po` manually. Remove the `#, fuzzy` flag
 - Pre-commit hooks run ruff and auto-fix formatting. If a commit fails due to formatting, re-stage the auto-fixed files and commit again.
 - Template arithmetic is not supported in Django `{% if %}` tags — precompute derived values (thresholds, flags) in the view instead.
 - Use `speckenv` to load `.env` files in standalone Python scripts: `from speckenv import read_speckenv; read_speckenv(Path(__file__).parent / ".env")`
+- In templates, when you check a queryset for existence and then iterate it,
+  bind it once with `{% with objects=obj.related.all %}` -- otherwise the
+  attribute is evaluated (and the query run) twice.
 - The "add issue to project" GitHub Actions workflow is duplicated across individual repos and should be consolidated into the org-level `.github` repo (org-level workflows apply to all repos). The cross-app parent warning workflow goes there too. See `specs/github-cost-allocation-report.md`.
 
 # Committing
