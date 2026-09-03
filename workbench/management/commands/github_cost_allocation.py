@@ -285,7 +285,7 @@ def _aggregate_monthly(node: IssueNode) -> dict[str, Decimal]:
 def _month_cells(monthly: dict, older_cutoff: str, recent_months: list, num):
     """Return cells for the Older bucket + one cell per recent month."""
     older = sum((v for k, v in monthly.items() if k < older_cutoff), Z1)
-    cells = [num(older if older else None)]
+    cells = [num(older or None)]
     for m in recent_months:
         cells.append(num(monthly.get(m)))
     return cells

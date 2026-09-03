@@ -168,11 +168,7 @@ class Planning:
 
     def add_project_milestone(self, project, milestone):
         if milestone and (not self._milestones[project][milestone]):
-            start = (
-                milestone.phase_starts_on
-                if milestone.phase_starts_on
-                else milestone.date
-            )
+            start = milestone.phase_starts_on or milestone.date
             weeks = [
                 1 if monday(start) <= w <= monday(milestone.date) else 0
                 for w in self.weeks

@@ -23,26 +23,32 @@ holidays (national/cantonal) from company holidays (company-specific days off).
 ```python
 # workbench/awt/models.py
 
+
 @model_urls
 class Holiday(Model):
     class Kind(models.TextChoices):
-        PUBLIC  = "public",  _("public holiday")
+        PUBLIC = "public", _("public holiday")
         COMPANY = "company", _("company holiday")
 
-    date     = models.DateField(_("date"))
-    name     = models.CharField(_("name"), max_length=200)
+    date = models.DateField(_("date"))
+    name = models.CharField(_("name"), max_length=200)
     fraction = models.DecimalField(
         _("fraction of day which is free"),
-        default=1, max_digits=5, decimal_places=2,
+        default=1,
+        max_digits=5,
+        decimal_places=2,
     )
     kind = models.CharField(
-        _("kind"), max_length=10, choices=Kind.choices, default=Kind.PUBLIC,
+        _("kind"),
+        max_length=10,
+        choices=Kind.choices,
+        default=Kind.PUBLIC,
     )
 
     class Meta:
-        ordering        = ["-date"]
+        ordering = ["-date"]
         unique_together = [("date", "kind")]
-        verbose_name        = _("holiday")
+        verbose_name = _("holiday")
         verbose_name_plural = _("holidays")
 
     def __str__(self):
@@ -153,7 +159,7 @@ def holiday_days_by_month(year):
     """
     result = {Holiday.Kind.PUBLIC: [Z1] * 12, Holiday.Kind.COMPANY: [Z1] * 12}
     for h in Holiday.objects.filter(date__year=year):
-        if h.date.weekday() >= 5:   # skip weekends
+        if h.date.weekday() >= 5:  # skip weekends
             continue
         result[h.kind][h.date.month - 1] += h.fraction
     return result
@@ -295,11 +301,12 @@ For each year in the range the command collects holidays from two sources:
 ```python
 from workbench.planning.holidays import get_public_holidays, get_zurich_holidays
 
+
 def _collect_holidays(year):
-    holidays = get_public_holidays(year)   # algorithmic (Easter etc.)
-    zurich   = get_zurich_holidays(year)   # scrapes feiertagskalender.ch
+    holidays = get_public_holidays(year)  # algorithmic (Easter etc.)
+    zurich = get_zurich_holidays(year)  # scrapes feiertagskalender.ch
     holidays.update(zurich)
-    return holidays                        # {date: [name, fraction]}
+    return holidays  # {date: [name, fraction]}
 ```
 
 **Verification step (before any DB writes):** after collecting, the command
@@ -331,11 +338,12 @@ month.  The delta is then applied to **every** `Year` record whose
 from django.db.models import F
 from workbench.awt.models import Year
 
+
 def _adjust_year_months(year, month_deltas):
     # month_deltas: {1: Decimal("2"), 4: Decimal("0.5"), ...}  (1-indexed)
     year_obj = Year.objects.filter(year=year)
     for month_index, delta in month_deltas.items():
-        field = Year.MONTHS[month_index - 1]          # e.g. "january"
+        field = Year.MONTHS[month_index - 1]  # e.g. "january"
         year_obj.update(**{field: F(field) + delta})
 ```
 
@@ -347,13 +355,14 @@ from workbench.awt.reporting import annual_working_time
 
 TOLERANCE = Decimal("0.01")
 
+
 def handle(self, *args, **options):
     years_to_check = _parse_years(options["years"])
 
     # collect + verify before opening the transaction
     all_holidays = {}
     for year in years_to_check:
-        all_holidays[year] = _collect_holidays(year)   # aborts if data missing
+        all_holidays[year] = _collect_holidays(year)  # aborts if data missing
 
     with transaction.atomic():
         # Step 1 — before state
@@ -361,13 +370,12 @@ def handle(self, *args, **options):
         for year in years_to_check:
             awt = annual_working_time(year)
             before[year] = {
-                row["user"].id: row["totals"]["balance"]
-                for row in awt["statistics"]
+                row["user"].id: row["totals"]["balance"] for row in awt["statistics"]
             }
 
         # Step 2 — apply changes
         for year, holidays in all_holidays.items():
-            _insert_holidays(year, holidays)     # Holiday.objects.bulk_create(...)
+            _insert_holidays(year, holidays)  # Holiday.objects.bulk_create(...)
             month_deltas = _compute_month_deltas(holidays)
             _adjust_year_months(year, month_deltas)
 
@@ -376,8 +384,7 @@ def handle(self, *args, **options):
         for year in years_to_check:
             awt = annual_working_time(year)
             after[year] = {
-                row["user"].id: row["totals"]["balance"]
-                for row in awt["statistics"]
+                row["user"].id: row["totals"]["balance"] for row in awt["statistics"]
             }
 
         # Step 4 — compare
@@ -397,7 +404,7 @@ def handle(self, *args, **options):
             raise CommandError("Balance discrepancies found — rolling back.")
 
         if options["dry_run"]:
-            raise CommandError("Dry run — rolling back.")   # always rollback
+            raise CommandError("Dry run — rolling back.")  # always rollback
 
         self.stdout.write("All balances preserved. Changes committed.")
 ```

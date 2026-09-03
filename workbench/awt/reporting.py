@@ -1,5 +1,5 @@
 import datetime as dt
-from collections import defaultdict
+from collections import UserDict, defaultdict
 from decimal import ROUND_UP, Decimal
 
 from django.db.models import Sum
@@ -21,7 +21,7 @@ from workbench.logbook.models import LoggedHours
 from workbench.tools.formats import Z1, Z2
 
 
-class Months(dict):
+class Months(UserDict):
     def __init__(self, *, year, users):
         self.year = year
         self.year_by_wtm = {

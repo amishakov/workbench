@@ -1,6 +1,7 @@
 import datetime as dt
 import itertools
 import re
+from collections import UserDict
 from decimal import ROUND_UP, Decimal
 from urllib.parse import urlencode
 
@@ -18,7 +19,7 @@ from workbench.tools.formats import Z1, local_date_format
 TIMESTAMPS_DETECT_GAP = 120  # seconds
 
 
-class Slice(dict):
+class Slice(UserDict):
     @property
     def has_associated_log(self):
         return bool(self.get("logged_hours") or self.get("logged_break"))

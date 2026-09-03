@@ -90,7 +90,7 @@ def oauth2(request):
     if user and user.is_active:
         auth.login(request, user)
         next = request.get_signed_cookie("next", default=None, salt="next")
-        response = redirect(next if next else "/")
+        response = redirect(next or "/")
         response.delete_cookie("next")
         response.set_cookie("login_hint", user.email, expires=180 * 86400)
         return response

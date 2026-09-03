@@ -608,7 +608,7 @@ class CreateProjectInvoiceForm(InvoiceForm):
                     '<input type="checkbox" data-toggle-following id="{}">'
                     '<label for="{}">{}</label>'
                     "</div>",
-                    offer if offer else _("Not offered yet"),
+                    offer or _("Not offered yet"),
                     id,
                     id,
                     _("Select all"),
