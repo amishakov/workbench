@@ -611,7 +611,12 @@ class CreateProjectInvoiceForm(InvoiceForm):
 
             def filter(services):
                 for row in services:
-                    if row["not_archived"]:
+                    if (
+                        row["service"].effort_rate is not None
+                        and row["not_archived"]
+                        or row["logged_hours"]
+                        or row["logged_cost"]
+                    ):
                         yield row
 
         else:

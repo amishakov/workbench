@@ -188,7 +188,8 @@ class InvoicesTest(TestCase):
 
         self.assertContains(response, "<strong>cost-only</strong><br>10.00")
         self.assertContains(response, "1.0h logged but no hourly rate defined.")
-        self.assertNotContains(response, "no-rate")
+        self.assertContains(response, "<strong>no-rate</strong><br>0.00")
+        self.assertContains(response, "2.0h logged but no hourly rate defined.")
         self.assertContains(response, "<strong>with-rate</strong><br>600.00")
         self.assertContains(response, "id_show_service_details")
         self.assertNotContains(response, f'value="{service4.pk}"')
